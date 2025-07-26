@@ -1,0 +1,142 @@
+
+-- Catnip Auto Serverhopper with Persistent Settings + Pause Functionality
+
+getgenv().CatnipSettings = getgenv().CatnipSettings or {
+    SelectedRarities = {},
+    AutoHop = false
+}
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "CatnipAutoHopper"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 460)
+frame.Position = UDim2.new(0.5, -150, 0.5, -230)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Text = "🐾 Catnip's Auto Serverhopper"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+
+local container = Instance.new("Frame", frame)
+container.Size = UDim2.new(1, -20, 0, 310)
+container.Position = UDim2.new(0, 10, 0, 50)
+container.BackgroundTransparency = 1
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0, 4)
+
+local rarities = { "Transcendant", "Celestial", "Divine", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common" }
+
+local function createRarityToggle(rarity)
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(1, 0, 0, 30)
+    toggle.Text = "[ ] " .. rarity
+    toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    toggle.TextColor3 = Color3.new(1, 1, 1)
+    toggle.Font = Enum.Font.Gotham
+    toggle.TextSize = 14
+    toggle.Parent = container
+
+    local selected = getgenv().CatnipSettings.SelectedRarities[rarity] or false
+    toggle.Text = selected and "[✓] " .. rarity or "[ ] " .. rarity
+
+    toggle.MouseButton1Click:Connect(function()
+        selected = not selected
+        getgenv().CatnipSettings.SelectedRarities[rarity] = selected
+        toggle.Text = selected and "[✓] " .. rarity or "[ ] " .. rarity
+    end)
+end
+
+for _, rarity in ipairs(rarities) do
+    createRarityToggle(rarity)
+end
+
+-- START/Pause Button
+local hopButton = Instance.new("TextButton", frame)
+hopButton.Size = UDim2.new(1, -20, 0, 40)
+hopButton.Position = UDim2.new(0, 10, 0, 370)
+hopButton.Text = "🚀 START HOPPING"
+hopButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+hopButton.TextColor3 = Color3.new(1, 1, 1)
+hopButton.Font = Enum.Font.GothamBold
+hopButton.TextSize = 16
+Instance.new("UICorner", hopButton).CornerRadius = UDim.new(0, 8)
+
+-- Toggle hop state
+hopButton.MouseButton1Click:Connect(function()
+    getgenv().CatnipSettings.AutoHop = not getgenv().CatnipSettings.AutoHop
+    hopButton.Text = getgenv().CatnipSettings.AutoHop and "⏸ PAUSE HOPPING" or "🚀 START HOPPING"
+end)
+
+-- Server Hop Logic
+local function findBestBaddie()
+    local order = {
+        Transcendant = 1, Celestial = 2, Divine = 3, Mythic = 4,
+        Legendary = 5, Epic = 6, Rare = 7, Uncommon = 8, Common = 9
+    }
+
+    local best = 10
+    local found = nil
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and model:FindFirstChildWhichIsA("Humanoid") then
+            for _, label in ipairs(model:GetDescendants()) do
+                if label:IsA("TextLabel") then
+                    for rarity, selected in pairs(getgenv().CatnipSettings.SelectedRarities) do
+                        if selected and label.Text:find(rarity) then
+                            local rank = order[rarity]
+                            if rank and rank < best then
+                                best = rank
+                                found = model
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return found
+end
+
+local function getRandomServer()
+    local servers = HttpService:JSONDecode(
+        game:HttpGet("https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100")
+    )
+    local currentJobId = game.JobId
+    for _, server in pairs(servers.data) do
+        if server.playing < server.maxPlayers and server.id ~= currentJobId then
+            return server.id
+        end
+    end
+    return nil
+end
+
+-- AutoHop Loop
+task.spawn(function()
+    while true do
+        task.wait(5)
+        if getgenv().CatnipSettings.AutoHop then
+            if not findBestBaddie() then
+                local nextServer = getRandomServer()
+                if nextServer then
+                    queue_on_teleport("loadstring(game:HttpGet('dog'))()")
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
+                end
+            end
+        end
+    end
+end)
