@@ -133,7 +133,7 @@ task.spawn(function()
             if not findBestBaddie() then
                 local nextServer = getRandomServer()
                 if nextServer then
-                    queue_on_teleport("loadstring(game:HttpGet('dog'))()")
+                    queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job'))()")
                     TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
                 end
             end
