@@ -1,7 +1,7 @@
--- Catnip's Auto Serverhopper
--- Uses getgenv() to persist settings and auto-executes on teleport
+-- Catnip Auto Serverhopper (with Persistent Settings via JSON)
+-- github.com/gabadagabadgoo/massmurder/job (raw)
 
--- Global settings
+-- Load or initialize global settings
 getgenv().CatnipSettings = getgenv().CatnipSettings or {
     SelectedRarities = {},
     AutoHop = false
@@ -78,6 +78,7 @@ hopButton.Font = Enum.Font.GothamBold
 hopButton.TextSize = 16
 Instance.new("UICorner", hopButton).CornerRadius = UDim.new(0, 8)
 
+-- Utility
 local function getRarityRank(rarity)
     local order = {
         Transcendant = 1, Celestial = 2, Divine = 3, Ascended = 4,
@@ -87,6 +88,7 @@ local function getRarityRank(rarity)
     return order[rarity] or 999
 end
 
+-- ESP Check
 local function findBestBaddie()
     local best = 999
     local found = nil
@@ -110,6 +112,7 @@ local function findBestBaddie()
     return found
 end
 
+-- Server hop util
 local function getRandomServer()
     local servers = HttpService:JSONDecode(
         game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
@@ -123,24 +126,32 @@ local function getRandomServer()
     return nil
 end
 
+-- Server hop
 local function hopIfNeeded()
     if getgenv().CatnipSettings.AutoHop and not findBestBaddie() then
+        local settingsJSON = HttpService:JSONEncode(getgenv().CatnipSettings)
+        local teleportScript = ([[
+            getgenv().CatnipSettings = %s
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/gabadagabadgoo/massmurder/main/job"))()
+        ]]):format(settingsJSON)
+        queue_on_teleport(teleportScript)
+
         local nextServer = getRandomServer()
         if nextServer then
-            queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/main/job'))()")
             TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
         end
     end
 end
 
+-- Button logic
 hopButton.MouseButton1Click:Connect(function()
     getgenv().CatnipSettings.AutoHop = not getgenv().CatnipSettings.AutoHop
     hopButton.Text = getgenv().CatnipSettings.AutoHop and "⏸️ Pause Hopping" or "🚀 Start Hopping"
     hopIfNeeded()
 end)
 
--- Trigger hop on load if needed
-task.spawn(function()
+-- Auto hop if toggled
+task.delay(1, function()
     if getgenv().CatnipSettings.AutoHop then
         hopIfNeeded()
     end
