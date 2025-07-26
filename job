@@ -1,4 +1,6 @@
--- Catnip Auto Serverhopper with Persistent Settings and Start/Pause
+
+-- Catnip Auto Serverhopper with Persistent Settings and Instant Start
+
 getgenv().CatnipSettings = getgenv().CatnipSettings or {
     SelectedRarities = {},
     AutoHop = false
@@ -9,14 +11,14 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- GUI Setup
+-- GUI
 local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 gui.Name = "CatnipAutoHopper"
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 420)
-frame.Position = UDim2.new(0.5, -150, 0.5, -210)
+frame.Size = UDim2.new(0, 300, 0, 440)
+frame.Position = UDim2.new(0.5, -150, 0.5, -220)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
@@ -31,7 +33,7 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 
 local container = Instance.new("Frame", frame)
-container.Size = UDim2.new(1, -20, 1, -80)
+container.Size = UDim2.new(1, -20, 1, -100)
 container.Position = UDim2.new(0, 10, 0, 50)
 container.BackgroundTransparency = 1
 
@@ -64,7 +66,6 @@ for _, rarity in ipairs(rarities) do
     createRarityToggle(rarity)
 end
 
--- Start/Pause Button
 local hopButton = Instance.new("TextButton", frame)
 hopButton.Size = UDim2.new(1, -20, 0, 40)
 hopButton.Position = UDim2.new(0, 10, 1, -50)
@@ -75,12 +76,11 @@ hopButton.Font = Enum.Font.GothamBold
 hopButton.TextSize = 16
 Instance.new("UICorner", hopButton).CornerRadius = UDim.new(0, 8)
 
-local order = {
-    Transcendant = 1, Celestial = 2, Divine = 3, Mythic = 4,
-    Legendary = 5, Epic = 6, Rare = 7, Uncommon = 8, Common = 9
-}
-
 local function findBestBaddie()
+    local order = {
+        Transcendant = 1, Celestial = 2, Divine = 3, Mythic = 4,
+        Legendary = 5, Epic = 6, Rare = 7, Uncommon = 8, Common = 9
+    }
     local best = 10
     local found = nil
     for _, model in ipairs(workspace:GetDescendants()) do
@@ -116,44 +116,22 @@ local function getRandomServer()
     return nil
 end
 
--- Start/Pause logic
-local hopping = false
+local function startHop()
+    if not findBestBaddie() then
+        local nextServer = getRandomServer()
+        if nextServer then
+            queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job'))()")
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
+        end
+    end
+end
 
 hopButton.MouseButton1Click:Connect(function()
-    hopping = not hopping
-    getgenv().CatnipSettings.AutoHop = hopping
-    hopButton.Text = hopping and "⏸ PAUSE HOPPING" or "🚀 START HOPPING!"
-
-    if hopping then
-        if not findBestBaddie() then
-            local nextServer = getRandomServer()
-            if nextServer then
-                local teleportCode = "loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job'))()"
-                if syn and syn.queue_on_teleport then
-                    syn.queue_on_teleport(teleportCode)
-                elseif queue_on_teleport then
-                    queue_on_teleport(teleportCode)
-                elseif fluxus and fluxus.queue_on_teleport then
-                    fluxus.queue_on_teleport(teleportCode)
-                end
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
-            end
-        end
-    end
+    getgenv().CatnipSettings.AutoHop = not getgenv().CatnipSettings.AutoHop
+    hopButton.Text = getgenv().CatnipSettings.AutoHop and "⏸️ PAUSE HOPPING" or "🚀 START HOPPING!"
+    if getgenv().CatnipSettings.AutoHop then startHop() end
 end)
 
--- Auto-hop on rejoin
-if getgenv().CatnipSettings.AutoHop and not findBestBaddie() then
-    local nextServer = getRandomServer()
-    if nextServer then
-        local teleportCode = "loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job '))()"
-        if syn and syn.queue_on_teleport then
-            syn.queue_on_teleport(teleportCode)
-        elseif queue_on_teleport then
-            queue_on_teleport(teleportCode)
-        elseif fluxus and fluxus.queue_on_teleport then
-            fluxus.queue_on_teleport(teleportCode)
-        end
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, nextServer)
-    end
+if getgenv().CatnipSettings.AutoHop then
+    startHop()
 end
