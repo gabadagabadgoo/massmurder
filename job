@@ -128,7 +128,7 @@ hopButton.MouseButton1Click:Connect(function()
         if not findBestBaddie() then
             local nextServer = getRandomServer()
             if nextServer then
-                local teleportCode = "loadstring(game:HttpGet('https://yourdomainname/autohopper.lua'))()"
+                local teleportCode = "loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job'))()"
                 if syn and syn.queue_on_teleport then
                     syn.queue_on_teleport(teleportCode)
                 elseif queue_on_teleport then
@@ -146,7 +146,7 @@ end)
 if getgenv().CatnipSettings.AutoHop and not findBestBaddie() then
     local nextServer = getRandomServer()
     if nextServer then
-        local teleportCode = "loadstring(game:HttpGet('https://yourdomainname/autohopper.lua'))()"
+        local teleportCode = "loadstring(game:HttpGet('https://raw.githubusercontent.com/gabadagabadgoo/massmurder/refs/heads/main/job '))()"
         if syn and syn.queue_on_teleport then
             syn.queue_on_teleport(teleportCode)
         elseif queue_on_teleport then
